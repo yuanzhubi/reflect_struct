@@ -1,4 +1,4 @@
-#if !defined(DEF_STRUCT_BEGIN)
+#if !defined(REFELECT_STRING2)
 
 //Template nesting 168 times may be safe for most compiler. You can increase it if your compiler can afford
 #define MAX_MEMBER_COUNT 168
