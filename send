@@ -1,0 +1,70 @@
+#define CO_JOIN3(x,y) x##y 
+#define CO_JOIN2(x,y) CO_JOIN3(x,y)
+#define CO_JOIN(x,y) CO_JOIN2(x,y)
+
+#if defined(__GNUC__)
+#define CO_TYPE_OF __typeof__
+#else
+#define CO_TYPE_OF decltype
+#endif
+
+#define CO_GET_EMPTY(...)
+#define CO_FE_0(co_call, x, ...) co_call(x)
+#define CO_FE_1(co_call, x, ...) co_call(x) CO_FE_0(co_call, __VA_ARGS__)
+#define CO_FE_2(co_call, x, ...) co_call(x) CO_FE_1(co_call, __VA_ARGS__)
+#define CO_FE_3(co_call, x, ...) co_call(x) CO_FE_2(co_call, __VA_ARGS__)
+#define CO_FE_4(co_call, x, ...) co_call(x) CO_FE_3(co_call, __VA_ARGS__)
+#define CO_FE_5(co_call, x, ...) co_call(x) CO_FE_4(co_call, __VA_ARGS__)
+#define CO_FE_6(co_call, x, ...) co_call(x) CO_FE_5(co_call, __VA_ARGS__)
+#define CO_FE_7(co_call, x, ...) co_call(x) CO_FE_6(co_call, __VA_ARGS__)
+#define CO_FE_8(co_call, x, ...) co_call(x) CO_FE_7(co_call, __VA_ARGS__)
+#define CO_FE_9(co_call, x, ...) co_call(x) CO_FE_8(co_call, __VA_ARGS__)
+
+#define CO_GET_NTH_ARG_E(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
+#define CO_EXPAND(x) x
+
+#define CO_FOR_EACH_E(x, ...) \
+    CO_EXPAND(CO_GET_NTH_ARG_E(CO_GET_EMPTY, ##__VA_ARGS__, CO_FE_9, CO_FE_8, CO_FE_7, CO_FE_6, CO_FE_5, CO_FE_4, CO_FE_3, CO_FE_2, CO_FE_1, CO_FE_0, CO_GET_EMPTY)(x, ##__VA_ARGS__))
+    
+#define CO_TYPEDEF(x) typedef CO_TYPE_OF(x) CO_JOIN(CO_TYPE_, x);
+#define CO_DEF_MEMBER(x) CO_JOIN(CO_TYPE_, x) x;
+#define CO_DEF_MEMBER_ARG(x) CO_TYPE_##x arg_##x,
+#define CO_ASSIGN(x) ,x(CO_JOIN(arg_, x))
+
+template <typename T, bool is_too_large = (sizeof(T)>16) >
+struct co_arg_type{
+    typedef T type;
+};
+
+template <typename T>
+struct co_arg_type<T, true>{
+    typedef const T& type;
+};
+
+struct co_empty{
+};
+
+#define CO_DEF_LAMBDA_STRUCT(return_type, co_lambda,  ...) \
+CO_FOR_EACH_E(CO_TYPEDEF, ##__VA_ARGS__) \
+struct CO_JOIN(CO_LAMBDA_TYPE_, __LINE__):public co_empty{\
+    CO_FOR_EACH_E(CO_DEF_MEMBER, ##__VA_ARGS__) \
+    CO_JOIN(CO_LAMBDA_TYPE_, __LINE__) \
+    CO_FOR_EACH_E(CO_DEF_MEMBER_ARG, #__VA_ARGS__) \
+        co_empty() CO_FOR_EACH_E(CO_ASSIGN, ##__VA_ARGS__){} \
+    return_type operator()() co_lambda \
+};
+
+#define CO_DEF_LAMBDA(name, return_type, co_lambda, ...) CO_DEF_LAMBDA_STRUCT(return_type, co_lambda, ##__VA_ARGS__) CO_JOIN(CO_LAMBDA_TYPE_, __LINE__) name(__VA_ARGS__);
+#define CO_NEW_LAMBDA(name, return_type, co_lambda, ...) CO_DEF_LAMBDA_STRUCT(return_type, co_lambda, ##__VA_ARGS__) CO_JOIN(CO_LAMBDA_TYPE_, __LINE__) *name = new CO_JOIN(CO_LAMBDA_TYPE_, __LINE__)(__VA_ARGS__);
+
+#include <iostream>
+using namespace std;
+int main(){
+    int i = 2;
+    int &j = i;
+    const int&k = j;
+    CO_DEF_LAMBDA(l, void, {cout << i << endl;}, i);
+    return 0;
+}
+
+
