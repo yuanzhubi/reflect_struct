@@ -28,7 +28,7 @@
     
 #define CO_TYPEDEF(x) typedef CO_TYPE_OF(x) CO_JOIN(CO_TYPE_, x);
 #define CO_DEF_MEMBER(x) CO_JOIN(CO_TYPE_, x) x;
-#define CO_DEF_MEMBER_ARG(x) CO_TYPE_##x arg_##x,
+#define CO_DEF_MEMBER_ARG(x) co_arg_type<CO_JOIN(CO_TYPE_, x)>::type CO_JOIN(arg_, x),
 #define CO_ASSIGN(x) ,x(CO_JOIN(arg_, x))
 
 template <typename T, bool is_too_large = (sizeof(T)>16) >
@@ -48,8 +48,7 @@ struct co_empty{
 CO_FOR_EACH_E(CO_TYPEDEF, ##__VA_ARGS__) \
 struct CO_JOIN(CO_LAMBDA_TYPE_, __LINE__):public co_empty{\
     CO_FOR_EACH_E(CO_DEF_MEMBER, ##__VA_ARGS__) \
-    CO_JOIN(CO_LAMBDA_TYPE_, __LINE__) \
-    CO_FOR_EACH_E(CO_DEF_MEMBER_ARG, #__VA_ARGS__) \
+    CO_JOIN(CO_LAMBDA_TYPE_, __LINE__) (CO_FOR_EACH_E(CO_DEF_MEMBER_ARG, ##__VA_ARGS__)...): \
         co_empty() CO_FOR_EACH_E(CO_ASSIGN, ##__VA_ARGS__){} \
     return_type operator()() co_lambda \
 };
@@ -63,7 +62,16 @@ int main(){
     int i = 2;
     int &j = i;
     const int&k = j;
-    CO_DEF_LAMBDA(l, void, {cout << i << endl;}, i);
+    CO_DEF_LAMBDA(l, void, {
+        cout << ++i << endl;
+        cout << ++j << endl;
+        }, i,j);
+    l();
+     cout << i << endl;
+        cout << j << endl;
+    typeof(j)& v = j;
+    v = 4;
+    cout << j << endl;
     return 0;
 }
 
